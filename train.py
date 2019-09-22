@@ -19,6 +19,8 @@ import time
 import random
 import librosa
 import wget
+from pydub import AudioSegment
+
 
 
 # === CONSTANTS ===
@@ -94,7 +96,7 @@ class Song:
         wget.download(self.download_link, sampleFileName)
         print('Download:', time.time()-start)
         start = time.time()
-        y, sr = librosa.load(sampleFileName, sr=22050)
+        y, sr = librosa.load(AudioSegment.from_mp3(sampleFileName).export(sampleFileName + ".ogg", format="ogg"), sr=22050)
         print('Load:', time.time()-start)
         start = time.time()
         y_harmonic, y_percussive = librosa.effects.hpss(y)
