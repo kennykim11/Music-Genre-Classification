@@ -40,9 +40,7 @@ import collections
 import json
 import os
 import threading
-import multiprocessing
 import time
-import random
 import librosa
 import wget
 from pydub import AudioSegment
@@ -50,11 +48,11 @@ from pydub import AudioSegment
 
 
 # === CONSTANTS ===
-sampleFileName = 'music/sample.mp3'
+sampleFileName = 'music/sample'
 percentForTraining = 0.9
 songs = []
 genresSet = collections.defaultdict(int)
-printDebugs = False
+printDebugs = True
 songDataName = 'songdata'
 
 
@@ -74,7 +72,7 @@ class Song:
     tuning = 0
     tempo = 0'''
 
-    def __init__(self, data, output_file):
+    def __init__(self, data):
         data[3] = data[3].split(' & ')
         if 'Country and Folk' in data[3] or 'Country Folk' in data[3]: data[3] = ['Country', 'Folk']
         for genre in data[3]:
@@ -92,7 +90,7 @@ class Song:
             self.genres = data[3]
             self.mood = data[4]
             self.download_link = data[5]
-        self.analyze(output_file)
+        self.analyze()
 
     def __str__(self):
         return str(self.__dict__)
@@ -117,14 +115,14 @@ class Song:
             self.pitchMeanEnergies += [sum(pitch)/len(pitch)]
         debug_print('tones',time.time()-start)
 
-    def analyze(self, output_file):
+    def analyze(self):
         total_time = time.time()
         debug_print('Analyzing ' + self.title)
         start = time.time()
-        wget.download(self.download_link, output_file+'.mp3')
+        wget.download(self.download_link, sampleFileName+'.mp3')
         debug_print('Download:', time.time()-start)
         start = time.time()
-        y, sr = librosa.load(AudioSegment.from_mp3(output_file+'.mp3').export(output_file + ".ogg", format="ogg"), sr=22050)
+        y, sr = librosa.load(AudioSegment.from_mp3(sampleFileName+'.mp3').export(sampleFileName + ".ogg", format="ogg"), sr=22050)
         debug_print('Load:', time.time()-start)
         start = time.time()
         y_harmonic, y_percussive = librosa.effects.hpss(y)
@@ -141,32 +139,20 @@ class Song:
 
         debug_print('Analysis:', time.time()-start)
 
-        with open(output_file+'.json', 'a') as file:
+        with open('songdata.json', 'a') as file:
             file.write(json.dumps(self.__dict__, indent=4) + ',\n')
         print(self.title, time.time()-total_time)
-        os.remove(output_file+'.mp3')
+        os.remove('songdata.mp3')
+        os.remove('songdata.ogg')
 
 
 # === FUNCTIONS ===
 def instantiateSongs():
     songDataBuffer = []
-    songProcesses = []
-    nextSongProcess = 0
-
-    def instantiateSong(buffer, output):
-        songs.append(Song(buffer, output))
-
     for line in open('songdata.txt', 'r').readlines():
         if line == '\n':
-            currentProcess = multiprocessing.Process(target=instantiateSong, args=(songDataBuffer, 'music/songdata'+str(nextSongProcess)))
-            songProcesses.append(currentProcess)
-            currentProcess.start()
+            songs.append(Song(songDataBuffer))
             songDataBuffer = []
-            nextSongProcess += 1
-            if nextSongProcess == 5:
-                [process.join() for process in songProcesses]
-                songProcesses = []
-                nextSongProcess = 0
         else:
             songDataBuffer += [line.strip()]
 
