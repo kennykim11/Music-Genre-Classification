@@ -97,10 +97,10 @@ class Song:
         total_time = time.time()
         debug_print('Analyzing ' + self.title)
         start = time.time()
-        wget.download(self.download_link, output_file)
+        wget.download(self.download_link, output_file+'.mp3')
         debug_print('Download:', time.time()-start)
         start = time.time()
-        y, sr = librosa.load(AudioSegment.from_mp3(sampleFileName).export(output_file + ".ogg", format="ogg"), sr=22050)
+        y, sr = librosa.load(AudioSegment.from_mp3(output_file+'.mp3').export(output_file + ".ogg", format="ogg"), sr=22050)
         debug_print('Load:', time.time()-start)
         start = time.time()
         y_harmonic, y_percussive = librosa.effects.hpss(y)
@@ -120,7 +120,7 @@ class Song:
         with open(output_file, 'a') as file:
             file.write(json.dumps(self.__dict__, indent=4) + ',\n')
         print(self.title, time.time()-total_time)
-        os.remove(sampleFileName)
+        os.remove(output_file+'.mp3')
 
     def assignRole(self):
         self.forTesting = random.random() < percentForTraining
