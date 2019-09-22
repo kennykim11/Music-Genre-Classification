@@ -28,6 +28,7 @@ sampleFileName = 'music/sample.mp3'
 percentForTraining = 0.9
 songs = []
 genresSet = collections.defaultdict(int)
+printDebugs = False
 
 
 # === CLASSES ===
@@ -77,30 +78,31 @@ class Song:
         start = time.time()
         hop_length = 512 #Use a default hop size of 512 samples @ 22KHz ~= 23ms
         self.tempo = librosa.beat.beat_track(y=y_percussive, sr=sr, hop_length=hop_length)[0]  # beats = estimated tempo in bpm
-        print('tempo',time.time()-start)
+        debug_print('tempo',time.time()-start)
 
     def calculate_tuning_and_tones(self, y_harmonic, sr):
         start = time.time()
         self.tuning = librosa.estimate_tuning(y=y_harmonic, sr=sr).tolist()
-        print('tuning',time.time()-start)
+        debug_print('tuning',time.time()-start)
         start = time.time()
         chroma = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr, tuning=self.tuning)
         self.pitchMeanEnergies = []
         for pitch in chroma:
             self.pitchMeanEnergies += [sum(pitch)/len(pitch)]
-        print('tones',time.time()-start)
+        debug_print('tones',time.time()-start)
 
     def analyze(self):
-        print('Analyzing ' + self.title)
+        total_time = time.time()
+        debug_print('Analyzing ' + self.title)
         start = time.time()
         wget.download(self.download_link, sampleFileName)
-        print('Download:', time.time()-start)
+        debug_print('Download:', time.time()-start)
         start = time.time()
         y, sr = librosa.load(AudioSegment.from_mp3(sampleFileName).export(sampleFileName + ".ogg", format="ogg"), sr=22050)
-        print('Load:', time.time()-start)
+        debug_print('Load:', time.time()-start)
         start = time.time()
         y_harmonic, y_percussive = librosa.effects.hpss(y)
-        print('Split tracks:', time.time()-start)
+        debug_print('Split tracks:', time.time()-start)
 
         start = time.time()
         threads = [
@@ -111,10 +113,11 @@ class Song:
         [thread.join() for thread in threads]
 
 
-        print('Analysis:', time.time()-start)
+        debug_print('Analysis:', time.time()-start)
 
         file = open('songdata.json', 'a')
         file.write(json.dumps(self.__dict__, indent=4) + ',\n')
+        print(time.time()-total_time)
         file.close()
         os.remove(sampleFileName)
 
@@ -131,6 +134,9 @@ def instantiateSongs():
             songDataBuffer = []
         else:
             songDataBuffer += [line.strip()]
+
+def debug_print(*args):
+    if printDebugs: print(args)
 
 def main():
     open('songdata.json', 'w+').close()
