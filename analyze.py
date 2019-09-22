@@ -142,8 +142,8 @@ class Song:
         with open('songdata.json', 'a') as file:
             file.write(json.dumps(self.__dict__, indent=4) + ',\n')
         print(self.title, time.time()-total_time)
-        os.remove('songdata.mp3')
-        os.remove('songdata.ogg')
+        os.remove(sampleFileName+'.mp3')
+        os.remove(sampleFileName+'.ogg')
 
 
 # === FUNCTIONS ===
