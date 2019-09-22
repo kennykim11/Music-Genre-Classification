@@ -117,10 +117,9 @@ class Song:
 
         debug_print('Analysis:', time.time()-start)
 
-        file = open(output_file, 'a')
-        file.write(json.dumps(self.__dict__, indent=4) + ',\n')
+        with open(output_file, 'a') as file:
+            file.write(json.dumps(self.__dict__, indent=4) + ',\n')
         print(self.title, time.time()-total_time)
-        file.close()
         os.remove(sampleFileName)
 
     def assignRole(self):
