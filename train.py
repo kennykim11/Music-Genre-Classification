@@ -15,6 +15,7 @@ import collections
 import json
 import os
 import threading
+import multiprocessing
 import time
 import random
 import librosa
@@ -28,7 +29,8 @@ sampleFileName = 'music/sample.mp3'
 percentForTraining = 0.9
 songs = []
 genresSet = collections.defaultdict(int)
-printDebugs = False
+printDebugs = True
+songDataName = 'songdata'
 
 
 # === CLASSES ===
@@ -47,7 +49,7 @@ class Song:
     tuning = 0
     tempo = 0'''
 
-    def __init__(self, data):
+    def __init__(self, data, output_file):
         data[3] = data[3].split(' & ')
         if 'Country and Folk' in data[3] or 'Country Folk' in data[3]: data[3] = ['Country', 'Folk']
         for genre in data[3]:
@@ -65,7 +67,7 @@ class Song:
             self.genres = data[3]
             self.mood = data[4]
             self.download_link = data[5]
-        self.analyze()
+        self.analyze(output_file)
         self.assignRole()
 
     def __str__(self):
@@ -91,7 +93,7 @@ class Song:
             self.pitchMeanEnergies += [sum(pitch)/len(pitch)]
         debug_print('tones',time.time()-start)
 
-    def analyze(self):
+    def analyze(self, output_file):
         total_time = time.time()
         debug_print('Analyzing ' + self.title)
         start = time.time()
@@ -115,7 +117,7 @@ class Song:
 
         debug_print('Analysis:', time.time()-start)
 
-        file = open('songdata.json', 'a')
+        file = open(output_file, 'a')
         file.write(json.dumps(self.__dict__, indent=4) + ',\n')
         print(self.title, time.time()-total_time)
         file.close()
@@ -128,10 +130,23 @@ class Song:
 # === FUNCTIONS ===
 def instantiateSongs():
     songDataBuffer = []
+    songProcesses = []
+    nextSongProcess = 0
+
+    def instantiateSong(buffer, output):
+        songs.append(Song(buffer, output))
+
     for line in open('songdata.txt', 'r').readlines():
         if line == '\n':
-            songs.append(Song(songDataBuffer))
+            currentProcess = multiprocessing.Process(target=instantiateSong, args=(songDataBuffer, 'songdata'+str(nextSongProcess)+'.json'))
+            songProcesses.append(currentProcess)
+            currentProcess.start()
             songDataBuffer = []
+            nextSongProcess += 1
+            if nextSongProcess == 5:
+                [process.join() for process in songProcesses]
+                songProcesses = []
+                nextSongProcess = 0
         else:
             songDataBuffer += [line.strip()]
 
