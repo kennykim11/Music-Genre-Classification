@@ -117,7 +117,7 @@ class Song:
 
         file = open('songdata.json', 'a')
         file.write(json.dumps(self.__dict__, indent=4) + ',\n')
-        print(time.time()-total_time)
+        print(self.title, time.time()-total_time)
         file.close()
         os.remove(sampleFileName)
 
