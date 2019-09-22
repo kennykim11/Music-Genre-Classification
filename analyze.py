@@ -54,7 +54,7 @@ sampleFileName = 'music/sample.mp3'
 percentForTraining = 0.9
 songs = []
 genresSet = collections.defaultdict(int)
-printDebugs = True
+printDebugs = False
 songDataName = 'songdata'
 
 
@@ -93,7 +93,6 @@ class Song:
             self.mood = data[4]
             self.download_link = data[5]
         self.analyze(output_file)
-        self.assignRole()
 
     def __str__(self):
         return str(self.__dict__)
